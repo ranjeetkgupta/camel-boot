@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/integration
+    http://www.springframework.org/schema/integration/spring-integration.xsd
+    http://www.springframework.org/schema/integration/http
+    http://www.springframework.org/schema/integration/http/spring-integration-http.xsd">
+ 
+    <!-- CHANNEL -->
+    <int:channel id="requestChannel" />
+    <int:channel id="outputChannel" />
+    <int:channel id="intermediateChannel" />
+    <int:channel id="intermediateChannel2" />
+    <int:channel id="gatherChannel" />    
+    <int:channel id="distribution1Channel" />
+    <int:channel id="distribution2Channel" />
+        
+      
+
+	<int-http:inbound-gateway request-channel="requestChannel"
+		reply-channel="outputChannel" supported-methods="GET" path="/getall">
+
+		<int-http:request-mapping consumes="application/json"
+			produces="application/json" />
+	</int-http:inbound-gateway>
+    
+    
+
+     
+    <int:service-activator ref="inboundEnpoint"
+        method="get" input-channel="requestChannel" output-channel="intermediateChannel" />
+        
+        
+    <int:service-activator ref="intermediateEnpoint"
+        method="get" input-channel="intermediateChannel" output-channel="intermediateChannel2" />
+        
+    <int:scatter-gather input-channel="intermediateChannel2" output-channel="outputChannel" gather-channel="gatherChannel" gather-timeout="10000">
+	<int:scatterer apply-sequence="true">
+		<int:recipient channel="distribution1Channel"/>
+		<int:recipient channel="distribution2Channel"/>		
+	</int:scatterer>
+	<!-- <int:gatherer release-strategy-expression="size() == 2"  correlation-strategy-expression="headers.id" /> -->
+	<int:gatherer release-strategy-expression="size() == 2"	/> 
+	<!-- correlation-strategy="customCorrelationStrategy"  -->	
+	
+    </int:scatter-gather>
+    
+    
+ <int-http:outbound-gateway id="getUser" 
+                   url="http://localhost:8080/user" 
+                request-channel="distribution1Channel" 
+                reply-channel="gatherChannel"
+                http-method="GET" 
+                expected-response-type="java.lang.String">
+ </int-http:outbound-gateway>
+ 
+ <int-http:outbound-gateway id="getAddress" 
+                   url="http://localhost:8080/address" 
+                request-channel="distribution2Channel" 
+                reply-channel="gatherChannel"
+                http-method="GET" 
+                expected-response-type="java.lang.String">
+ </int-http:outbound-gateway>
+ 
+    
+<!--     <int:service-activator ref="processorEnpoint1"
+        method="get" input-channel="distribution1Channel" output-channel="gatherChannel" />
+        
+    <int:service-activator ref="processorEnpoint2"
+        method="get" input-channel="distribution2Channel" output-channel="gatherChannel" /> -->
+ 
+    
+</beans>
