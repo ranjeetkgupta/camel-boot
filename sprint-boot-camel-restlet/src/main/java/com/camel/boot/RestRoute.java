@@ -20,14 +20,12 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.http.HttpComponent;
-import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
-import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
+import org.apache.camel.model.dataformat.XmlJsonDataFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.camel.processors.MyAggregator;
 import com.camel.processors.MyProcessor;
-import com.camel.processors.SimpleProcessor;
 
 /**
  * A Camel route that calls the REST service using a timer
@@ -69,90 +67,42 @@ public class RestRoute extends RouteBuilder {
 	
     @Override
     public void configure() throws Exception {
-        // call the embedded rest service from the PetController
-        //restConfiguration().host("localhost").port(8089);
     	
     	camelContext.getShutdownStrategy().setTimeout(1);
     	HttpComponent httpComponent = new HttpComponent();
     	camelContext.addComponent("http", httpComponent);
-        restConfiguration().component("restlet");
-        
-//        restConfiguration()
-//        .contextPath("/camel-rest-jpa").apiContextPath("/api-doc")
-//            .apiProperty("api.title", "Camel REST API")
-//            .apiProperty("api.version", "1.0")
-//            .apiProperty("cors", "true")
-//            .apiContextRouteId("doc-api")
-//        .bindingMode(RestBindingMode.json);
-
-     rest("/books").description("Books REST service")
-        .get("/getbooks").description("The list of all the books")
-            .route().routeId("books1")
-            .transform().simple("Hello World!")          
-            .endRest();
-        
-        
-//    rest("/books").description("Books REST service")
-//        .get("/getall").description("The list of all the books")
-//            .route().routeId("books2")
-//            .to("http4://localhost:8089/books/getbooks")
-//            .to("file:target/userInfo")
-//            //.bean(Database.class, "findBooks")
-//            .endRest();
-    
-//    rest("/books").description("Books REST service")
-//    .get("/getall").description("The list of all the books")
-//        .route().routeId("books2")
-//        .to("http4://localhost:8089/books/getbooks")
-//        .to("file:target/userInfo")
-//    
-//        .endRest();
-    
-//    from("timer:hello?period={{timer.period}}")
-//    .setHeader("id", simple("${random(1,3)}"))
-//    .to("jetty:http://services.groupkt.com/state/get/IND/UP")
-//    .log("${body}");
+        restConfiguration().component("restlet");     
+         
+     XmlJsonDataFormat xmlJsonFormat = new XmlJsonDataFormat();
      
+     from("direct:rcall3").
+     setHeader(Exchange.HTTP_METHOD,constant(org.apache.camel.component.http4.HttpMethods.POST)).
+     setBody(simple("<input><id>2014</id></input>")).
+     setHeader(Exchange.CONTENT_TYPE,constant("application/xml")).
+     to("http4://localhost:8091/account/?bridgeEndpoint=true").convertBodyTo(String.class).marshal(xmlJsonFormat).convertBodyTo(String.class);
      
-    //property(Exchange.GROUPED_EXCHANGE)
-    
-//		from("timer:hello?period={{timer.period}}")
-//				.multicast(new GroupedExchangeAggregationStrategy()).parallelProcessing()
-//				.enrich("jetty:http://localhost:8080/address")
-//				.enrich("jetty:http://localhost:8080/user").log("ended !!!").setBody(exchangeProperty(Exchange.GROUPED_EXCHANGE)).log("${body}");
-		
-//		from("timer:hello?period={{timer.period}}")
-//		.multicast(new GroupedMessageAggregationStrategy()).parallelProcessing()
-//		.to("jetty:http://localhost:8080/address")
-//		.to("jetty:http://localhost:8080/user").log("ended !!!").log("${header}");
-     
-     
-     
-     from("direct:rcall1").to("http://localhost:8080/user").convertBodyTo(String.class);
-     from("direct:rcall2").to("http://localhost:8080/address").convertBodyTo(String.class);
-     
-     
-//     from("direct:serviceFacade")
-//     .multicast(new MyAggregator()).parallelProcessing()
-//       .enrich("http://localhost:8080/user").enrich("http://localhost:8080/address")
-//     .end().convertBodyTo(String.class).process(new MyProcessor());
+     from("direct:rcall4").
+     setHeader(Exchange.HTTP_METHOD,constant(org.apache.camel.component.http4.HttpMethods.POST)).
+     setHeader(Exchange.CONTENT_TYPE,constant("application/xml")).
+     setBody(simple("<input><id>2014</id></input>")).
+     to("http4://localhost:8091/user/?bridgeEndpoint=true").convertBodyTo(String.class).marshal(xmlJsonFormat).convertBodyTo(String.class);
      
      
      from("direct:serviceFacade")
      .multicast(new MyAggregator()).parallelProcessing()
-       .to("direct:rcall1").to("direct:rcall2")
+       .to("direct:rcall3").to("direct:rcall4")
      .end().process(new MyProcessor());
      
-//     from("direct:serviceFacade")
-//        .to("http://localhost:8080/user").convertBodyTo(String.class).log("${body}")
-//       .process(new SimpleProcessor());
-
      
+    
+	  rest("/apis").description("Books REST service")
+	   .get("/getuserdetails").description("get User account Details")
+	       .route().routeId("userdetails")
+	       .to("direct:serviceFacade")
+	       .endRest();
      
-     
-     
-     from("timer:hello?period={{timer.period}}").enrich("direct:serviceFacade").log("endd !!!! ${body}");
-     // setBody(property(Exchange.GROUPED_EXCHANGE))
+     //from("timer:hello?period={{timer.period}}").enrich("direct:serviceFacade").log("endd !!!! ${body}");
+   
      
      
     }
