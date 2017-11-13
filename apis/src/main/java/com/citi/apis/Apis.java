@@ -16,7 +16,7 @@ public class Apis {
 	@PostMapping(value = "/user", produces = { "application/xml" }, consumes = { "application/xml" })
 	public User getUserDetails(@RequestBody Input in) {
 
-		User user = new User("raghvendra", "srinivas", "IN", "PRIVILAGED");
+		User user = new User("raghvendra", "srinivas", "IN", "PRIVILEGED");
 		return user;
 
 	}
