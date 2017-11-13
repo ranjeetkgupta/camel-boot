@@ -46,6 +46,11 @@
 			<version>${camel.version}</version>
 		</dependency>
 
+	<dependency>
+		<groupId>org.jolokia</groupId>
+		<artifactId>jolokia-core</artifactId>
+	</dependency>
+
 
 		<!-- Camel -->
 		<dependency>

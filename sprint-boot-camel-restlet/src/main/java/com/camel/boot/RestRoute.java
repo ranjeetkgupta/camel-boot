@@ -74,30 +74,38 @@ public class RestRoute extends RouteBuilder {
         restConfiguration().component("restlet");     
          
      XmlJsonDataFormat xmlJsonFormat = new XmlJsonDataFormat();
+     xmlJsonFormat.setRootName("input");
      
+     
+     // 1. Get Account Details with xml unmarshling.
      from("direct:rcall3").
      setHeader(Exchange.HTTP_METHOD,constant(org.apache.camel.component.http4.HttpMethods.POST)).
-     setBody(simple("<input><id>2014</id></input>")).
-     setHeader(Exchange.CONTENT_TYPE,constant("application/xml")).
+      setHeader(Exchange.CONTENT_TYPE,constant("application/xml")).
      to("http4://localhost:8091/account/?bridgeEndpoint=true").convertBodyTo(String.class).marshal(xmlJsonFormat).convertBodyTo(String.class);
      
+     
+     // 2. Get User Details with xml unmarshling.
      from("direct:rcall4").
+     log("msg recieved by rcall4>>  ${body}").
      setHeader(Exchange.HTTP_METHOD,constant(org.apache.camel.component.http4.HttpMethods.POST)).
-     setHeader(Exchange.CONTENT_TYPE,constant("application/xml")).
-     setBody(simple("<input><id>2014</id></input>")).
+     setHeader(Exchange.CONTENT_TYPE,constant("application/xml")).   
      to("http4://localhost:8091/user/?bridgeEndpoint=true").convertBodyTo(String.class).marshal(xmlJsonFormat).convertBodyTo(String.class);
      
      
+     // Wire Account flow and User flow using parallel processing with a direct endpoint 'serviceFacade'
      from("direct:serviceFacade")
      .multicast(new MyAggregator()).parallelProcessing()
        .to("direct:rcall3").to("direct:rcall4")
      .end().process(new MyProcessor());
      
-     
-    
+         
+     // Expose A rest service with Json interface to invoke the 'serviceFacade' endpoint
 	  rest("/apis").description("Books REST service")
-	   .get("/getuserdetails").description("get User account Details")
+	   .post("/getuserdetails").description("get User account Details")
+	       .consumes("application/json")
 	       .route().routeId("userdetails")
+	       .log("msg recieved >>  ${body}")
+	       .unmarshal(xmlJsonFormat)
 	       .to("direct:serviceFacade")
 	       .endRest();
      
