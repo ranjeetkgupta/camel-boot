@@ -15,7 +15,7 @@
     <int:channel id="requestChannel" />
     <int:channel id="outputChannel" />
     <int:channel id="intermediateChannel" />
-    <int:channel id="intermediateChannel2" />
+    <int:channel id="gatherChannelOutput" />
     <int:channel id="gatherChannel" />    
     <int:channel id="distribution1Channel" />
     <int:channel id="distribution2Channel" />
@@ -23,23 +23,29 @@
       
 
 	<int-http:inbound-gateway request-channel="requestChannel"
-		reply-channel="outputChannel" supported-methods="GET" path="/getall">
+		reply-channel="outputChannel" supported-methods="POST" path="/login" request-payload-type="java.lang.String">
 
 		<int-http:request-mapping consumes="application/json"
 			produces="application/json" />
 	</int-http:inbound-gateway>
     
     
+    <int:transformer ref="customTransformer" output-channel="xFormedRequestChannel" input-channel="requestChannel" method="jsonToXml"/>
+
+  
+    
 
      
     <int:service-activator ref="inboundEnpoint"
-        method="get" input-channel="requestChannel" output-channel="intermediateChannel" />
+        method="get" input-channel="xFormedRequestChannel" output-channel="intermediateChannel" />
         
+     <int:service-activator ref="outBoundEnpoint"
+        method="get" input-channel="gatherChannelOutput" output-channel="outputChannel" />
         
-    <int:service-activator ref="intermediateEnpoint"
-        method="get" input-channel="intermediateChannel" output-channel="intermediateChannel2" />
+ <!--    <int:service-activator ref="intermediateEnpoint"
+        method="get" input-channel="intermediateChannel" output-channel="intermediateChannel2" /> -->
         
-    <int:scatter-gather input-channel="intermediateChannel2" output-channel="outputChannel" gather-channel="gatherChannel" gather-timeout="10000">
+    <int:scatter-gather input-channel="intermediateChannel" output-channel="gatherChannelOutput" gather-channel="gatherChannel" gather-timeout="10000">
 	<int:scatterer apply-sequence="true">
 		<int:recipient channel="distribution1Channel"/>
 		<int:recipient channel="distribution2Channel"/>		
@@ -50,29 +56,35 @@
 	
     </int:scatter-gather>
     
-    
+ <int:chain id="getAccountDetails" input-channel="distribution1Channel" output-channel="gatherChannel">
+ 
+  <int:header-enricher>
+         <int:header name="Content-Type" value="application/xml"/>
+   </int:header-enricher>
+ 
+ <int-http:outbound-gateway id="getAccount" 
+                url="http://localhost:8091/account/"               
+                http-method="POST"                 
+                expected-response-type="java.lang.String">                
+ </int-http:outbound-gateway>
+ <int:transformer ref="customTransformer" method="xmlToJson"/>
+ </int:chain>
+ 
+ <int:chain id="getUserDetails" input-channel="distribution2Channel" output-channel="gatherChannel">
+ 
+ <int:header-enricher>
+         <int:header name="Content-Type" value="application/xml"/>
+ </int:header-enricher>
+ 
  <int-http:outbound-gateway id="getUser" 
-                   url="http://localhost:8080/user" 
-                request-channel="distribution1Channel" 
-                reply-channel="gatherChannel"
-                http-method="GET" 
+                url="http://localhost:8091/user/"          
+                http-method="POST" 
                 expected-response-type="java.lang.String">
  </int-http:outbound-gateway>
  
- <int-http:outbound-gateway id="getAddress" 
-                   url="http://localhost:8080/address" 
-                request-channel="distribution2Channel" 
-                reply-channel="gatherChannel"
-                http-method="GET" 
-                expected-response-type="java.lang.String">
- </int-http:outbound-gateway>
+ <int:transformer ref="customTransformer" method="xmlToJson"/>
  
+  </int:chain>
     
-<!--     <int:service-activator ref="processorEnpoint1"
-        method="get" input-channel="distribution1Channel" output-channel="gatherChannel" />
-        
-    <int:service-activator ref="processorEnpoint2"
-        method="get" input-channel="distribution2Channel" output-channel="gatherChannel" /> -->
- 
     
 </beans>
