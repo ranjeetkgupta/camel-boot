@@ -19,6 +19,7 @@
     <int:channel id="gatherChannel" />    
     <int:channel id="distribution1Channel" />
     <int:channel id="distribution2Channel" />
+    <int:channel id="xFormedRequestChannel" />
         
       
 
