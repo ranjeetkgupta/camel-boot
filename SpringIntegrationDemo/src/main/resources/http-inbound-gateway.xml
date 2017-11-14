@@ -23,29 +23,26 @@
       
 
 	<int-http:inbound-gateway request-channel="requestChannel"
-		reply-channel="outputChannel" supported-methods="POST" path="/login" request-payload-type="java.lang.String">
+		reply-channel="outputChannel" supported-methods="POST" path="/login" request-payload-type="java.lang.String" id="customerlogin" >
 
 		<int-http:request-mapping consumes="application/json"
 			produces="application/json" />
 	</int-http:inbound-gateway>
     
     
-    <int:transformer ref="customTransformer" output-channel="xFormedRequestChannel" input-channel="requestChannel" method="jsonToXml"/>
+    <int:transformer ref="customTransformer" output-channel="xFormedRequestChannel" input-channel="requestChannel" method="jsonToXml" id="jsontoxml"/>
 
   
     
 
      
     <int:service-activator ref="inboundEnpoint"
-        method="get" input-channel="xFormedRequestChannel" output-channel="intermediateChannel" />
+        method="get" input-channel="xFormedRequestChannel" output-channel="intermediateChannel" id="in msg handler"/>
         
      <int:service-activator ref="outBoundEnpoint"
-        method="get" input-channel="gatherChannelOutput" output-channel="outputChannel" />
-        
- <!--    <int:service-activator ref="intermediateEnpoint"
-        method="get" input-channel="intermediateChannel" output-channel="intermediateChannel2" /> -->
-        
-    <int:scatter-gather input-channel="intermediateChannel" output-channel="gatherChannelOutput" gather-channel="gatherChannel" gather-timeout="10000">
+        method="get" input-channel="gatherChannelOutput" output-channel="outputChannel" id="out msg handler"/>
+          
+    <int:scatter-gather input-channel="intermediateChannel" output-channel="gatherChannelOutput" gather-channel="gatherChannel" gather-timeout="10000" id="scatter">
 	<int:scatterer apply-sequence="false">
 		<int:recipient channel="distribution1Channel"/>
 		<int:recipient channel="distribution2Channel"/>		
@@ -58,7 +55,7 @@
     
  <int:chain id="getAccountDetails" input-channel="distribution1Channel" output-channel="gatherChannel">
  
-  <int:header-enricher>
+  <int:header-enricher id="account header enricher">
          <int:header name="Content-Type" value="application/xml"/>
          <int:header name="corelationId" value="1567"/>
    </int:header-enricher>
@@ -68,12 +65,12 @@
                 http-method="POST"                 
                 expected-response-type="java.lang.String">                
  </int-http:outbound-gateway>
- <int:transformer ref="customTransformer" method="xmlToJson"/>
+ <int:transformer ref="customTransformer" method="xmlToJson" id="xmlToJson acc"/>
  </int:chain>
  
  <int:chain id="getUserDetails" input-channel="distribution2Channel" output-channel="gatherChannel">
  
- <int:header-enricher>
+ <int:header-enricher id="user header enricher">
          <int:header name="Content-Type" value="application/xml"/>
          <int:header name="corelationId" value="1567"/>
  </int:header-enricher>
@@ -84,7 +81,7 @@
                 expected-response-type="java.lang.String">
  </int-http:outbound-gateway>
  
- <int:transformer ref="customTransformer" method="xmlToJson"/>
+ <int:transformer ref="customTransformer" method="xmlToJson" id="xmlToJson user"/>
  
   </int:chain>
     
