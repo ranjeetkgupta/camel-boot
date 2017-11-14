@@ -16,10 +16,14 @@
  */
 package com.camel.boot;
 
+import java.util.List;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.http.HttpComponent;
+import org.apache.camel.model.ModelHelper;
+import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.model.dataformat.XmlJsonDataFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -78,29 +82,29 @@ public class RestRoute extends RouteBuilder {
      
      
      // 1. Get Account Details with xml unmarshling.
-     from("direct:rcall3").
+     from("direct:rcall3").id("rcall3").
      setHeader(Exchange.HTTP_METHOD,constant(org.apache.camel.component.http4.HttpMethods.POST)).
       setHeader(Exchange.CONTENT_TYPE,constant("application/xml")).
      to("http4://localhost:8091/account/?bridgeEndpoint=true").convertBodyTo(String.class).marshal(xmlJsonFormat).convertBodyTo(String.class);
      
      
      // 2. Get User Details with xml unmarshling.
-     from("direct:rcall4").
+     from("direct:rcall4").id("rcall4").
      log("msg recieved by rcall4>>  ${body}").
      setHeader(Exchange.HTTP_METHOD,constant(org.apache.camel.component.http4.HttpMethods.POST)).
      setHeader(Exchange.CONTENT_TYPE,constant("application/xml")).   
      to("http4://localhost:8091/user/?bridgeEndpoint=true").convertBodyTo(String.class).marshal(xmlJsonFormat).convertBodyTo(String.class);
      
      
-     // Wire Account flow and User flow using parallel processing with a direct endpoint 'serviceFacade'
-     from("direct:serviceFacade")
+     // 3. Wire Account flow and User flow using parallel processing with a direct endpoint 'serviceFacade'
+     from("direct:serviceFacade").id("serviceFacade")
      .multicast(new MyAggregator()).parallelProcessing()
        .to("direct:rcall3").to("direct:rcall4")
      .end().process(new MyProcessor());
      
          
-     // Expose A rest service with Json interface to invoke the 'serviceFacade' endpoint
-	  rest("/apis").description("Books REST service")
+     // 4. Expose A rest service with Json interface to invoke the 'serviceFacade' endpoint
+	  rest("/apis").description("Books REST service").id("rest_route")
 	   .post("/getuserdetails").description("get User account Details")
 	       .consumes("application/json")
 	       .route().routeId("userdetails")
@@ -109,8 +113,7 @@ public class RestRoute extends RouteBuilder {
 	       .to("direct:serviceFacade")
 	       .endRest();
      
-     //from("timer:hello?period={{timer.period}}").enrich("direct:serviceFacade").log("endd !!!! ${body}");
-   
+     //from("timer:hello?period={{timer.period}}").enrich("direct:serviceFacade").log("endd !!!! ${body}");  
      
      
     }
