@@ -46,12 +46,12 @@
         method="get" input-channel="intermediateChannel" output-channel="intermediateChannel2" /> -->
         
     <int:scatter-gather input-channel="intermediateChannel" output-channel="gatherChannelOutput" gather-channel="gatherChannel" gather-timeout="10000">
-	<int:scatterer apply-sequence="true">
+	<int:scatterer apply-sequence="false">
 		<int:recipient channel="distribution1Channel"/>
 		<int:recipient channel="distribution2Channel"/>		
 	</int:scatterer>
-	<!-- <int:gatherer release-strategy-expression="size() == 2"  correlation-strategy-expression="headers.id" /> -->
-	<int:gatherer release-strategy-expression="size() == 2"	/> 
+	<int:gatherer release-strategy-expression="size() == 2"  correlation-strategy-expression="headers.cid" />
+	<!-- <int:gatherer release-strategy-expression="size() == 2"	/>  -->
 	<!-- correlation-strategy="customCorrelationStrategy"  -->	
 	
     </int:scatter-gather>
@@ -60,6 +60,7 @@
  
   <int:header-enricher>
          <int:header name="Content-Type" value="application/xml"/>
+         <int:header name="corelationId" value="1567"/>
    </int:header-enricher>
  
  <int-http:outbound-gateway id="getAccount" 
@@ -74,6 +75,7 @@
  
  <int:header-enricher>
          <int:header name="Content-Type" value="application/xml"/>
+         <int:header name="corelationId" value="1567"/>
  </int:header-enricher>
  
  <int-http:outbound-gateway id="getUser" 

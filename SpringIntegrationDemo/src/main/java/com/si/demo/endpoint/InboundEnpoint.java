@@ -27,21 +27,13 @@ public class InboundEnpoint {
 	public Message<?> get(Message<?> msg) {
 		log.info("Inbound method");
 		
-//		Random rand = new Random();
-//		//msg.getHeaders().put("correlation_id", rand.nextInt() + "");	
-//		log.info("msg >>>" + msg.getPayload().toString());
-//		log.info("correlation_id >>>" + msg.getHeaders().get("correlation_id"));
-//		log.info("uuid >>>" + msg.getHeaders().getId());
-//		List<Customer> custLst = custService.getAll();
-//		
-//		return MessageBuilder.withPayload(custLst).copyHeadersIfAbsent(msg.getHeaders())
-//				.setHeader("http_statusCode", HttpStatus.OK).build();
-
+		Random rand = new Random();
 		log.info("IntermediateEnpoint GET method");
 		log.info("msg >>>" + msg);
 		log.info("correlation_id >>>" + msg.getHeaders().get("correlation_id"));
-		log.info("uuid >>>" + msg.getHeaders().getId());
-		return msg;
+		log.info("cid >>>" + msg.getHeaders().get("cid")+"");		
+		return MessageBuilder.fromMessage(msg).setHeader("cid", rand.nextInt() + "").build();	
+		
 	}
 	
 	public void post(Message<Customer> msg){

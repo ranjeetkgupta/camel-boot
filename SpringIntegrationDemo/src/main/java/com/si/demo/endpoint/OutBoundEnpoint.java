@@ -2,6 +2,7 @@ package com.si.demo.endpoint;
 
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -37,7 +38,16 @@ public class OutBoundEnpoint {
 //		
 //		return MessageBuilder.withPayload(custLst).copyHeadersIfAbsent(msg.getHeaders())
 //				.setHeader("http_statusCode", HttpStatus.OK).build();
-
+		log.info("cid >>>" + msg.getHeaders().get("cid")+"");
+		Set<String> headers = msg.getHeaders().keySet();
+		for(String h : headers)
+		{
+			
+			System.out.println("header >>>>" + h);
+			System.out.println("value >>>>" + msg.getHeaders().get(h));
+		}
+		
+		
 		log.info("IntermediateEnpoint GET method");
 		log.info("msg >>>" + msg);
 		List<Object> responses = (List<Object>) msg.getPayload();
